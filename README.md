@@ -12,7 +12,7 @@ So if you want to use Sound on your server you will need to create your own bot 
 - Create a discord application with a bot
 - Add this bot to your discord server
 - Add your bot token into your environment variables (TOKEN)
-- Build project
+- Clone and build project OR download it [here](https://github.com/Roxeez/Sound/releases)
 - Add ffpmeg.exe and ffprobe.exe into build folder
 - Run Sound.exe or Sound.dll
 
