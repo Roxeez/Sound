@@ -16,6 +16,7 @@ So if you want to use Sound on your server you will need to create your own bot 
 - Add ffpmeg.exe and ffprobe.exe into build folder
 - Run Sound.exe or Sound.dll
 
-## Commands
-- !play <youtube_link>
-- !skip
+## Libraries
+- [DSharpPlus](https://github.com/DSharpPlus/DSharpPlus)
+- [VideoLibrary](https://github.com/omansak/libvideo)
+- [Xabe.FFmpeg](https://github.com/tomaszzmuda/Xabe.FFmpeg)
