@@ -36,11 +36,11 @@ namespace Sound.Service
                 EnableDms = false
             });
             
-            commands.RegisterCommands<UserCommandModule>();
+            commands.RegisterCommands<MusicCommandModule>();
             
             await client.ConnectAsync();
             
-            logger.LogInformation($"Discord client successfully connected.");
+            logger.LogInformation("Discord client successfully connected.");
         }
 
         public async Task StopAsync(CancellationToken cancellationToken)
@@ -49,6 +49,7 @@ namespace Sound.Service
             while (queue.TryDequeue(out var music))
             {
                 music.Cts.Cancel();
+                await music.Message.DeleteAsync();
             }
             await client.DisconnectAsync();
             

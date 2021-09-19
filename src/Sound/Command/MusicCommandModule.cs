@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
-using Microsoft.Extensions.Logging;
 using Sound.Core;
 using Sound.Manager;
 using VideoLibrary;
@@ -13,11 +12,11 @@ using Xabe.FFmpeg;
 
 namespace Sound.Command
 {
-    public class UserCommandModule : BaseCommandModule
+    public class MusicCommandModule : BaseCommandModule
     {
         private readonly MusicManager manager;
 
-        public UserCommandModule(MusicManager manager)
+        public MusicCommandModule(MusicManager manager)
         {
             this.manager = manager;
         }
@@ -42,7 +41,8 @@ namespace Sound.Command
                 return;
             }
 
-            var video = await YouTube.Default.GetVideoAsync(url);
+            var videos = await YouTube.Default.GetAllVideosAsync(url);
+            var video = videos.OrderByDescending(x => x.AudioBitrate).FirstOrDefault();
             if (video is null)
             {
                 return;
@@ -63,8 +63,8 @@ namespace Sound.Command
             var mp3 = Path.GetTempFileName();
             var mp4 = Path.GetTempFileName();
             
-            using(var file = File.Create(mp4))
-            using (var stream = await video.StreamAsync())
+            var stream = await video.StreamAsync();
+            using (var file = File.Create(mp4))
             {
                 await stream.CopyToAsync(file);
             }
@@ -94,7 +94,7 @@ namespace Sound.Command
             
             File.Delete(mp4);
             File.Delete(mp3);
-            
+
             var position = manager.AddMusicToQueue(new Music
             {
                 Message = message,
@@ -106,13 +106,12 @@ namespace Sound.Command
             });
             
             await message.ModifyAsync(new DiscordEmbedBuilder()
-                .WithColor(DiscordColor.Green)
+                .WithColor(DiscordColor.CornflowerBlue)
                 .WithTitle($"{video.Title}")
                 .AddField("Author", video.Info.Author, true)
                 .AddField("Duration", duration.ToString(@"m\:ss"), true)
                 .AddField("Requested by", ctx.Member.Mention, true)
-                .AddField("Status", "Waiting", true)
-                .AddField("Position", $"{position}", true)
+                .AddField("Status", $"Waiting (n°{position})")
                 .AddField("Url", url).Build());
         }
     }
