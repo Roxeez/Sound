@@ -6,25 +6,49 @@ using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
+using Sound.Core;
 using Sound.Manager;
 using VideoLibrary;
 using Xabe.FFmpeg;
 
 namespace Sound.Command
 {
-    public class UserCommands : BaseCommandModule
+    public class UserCommandModule : BaseCommandModule
     {
         private readonly MusicManager manager;
-        private readonly ILogger<UserCommands>
-        public UserCommands(MusicManager manager)
+
+        public UserCommandModule(MusicManager manager)
         {
             this.manager = manager;
+        }
+
+        [Command("skip")]
+        public async Task Skip(CommandContext ctx)
+        {
+            var queue = manager.GetQueue();
+            if (queue.TryPeek(out var music))
+            {
+                music.Cts.Cancel();
+                await ctx.Message.DeleteAsync();
+            }
         }
 
         [Command("play")]
         public async Task Play(CommandContext ctx, [RemainingText] string url)
         {
+            var channel = ctx.Member?.VoiceState?.Channel;
+            if (channel is null)
+            {
+                return;
+            }
+
             var video = await YouTube.Default.GetVideoAsync(url);
+            if (video is null)
+            {
+                return;
+            }
+
+            await ctx.Message.DeleteAsync();
 
             var duration = TimeSpan.FromSeconds(video.Info.LengthSeconds ?? 0);
             var message = await ctx.Channel.SendMessageAsync(new DiscordEmbedBuilder()
@@ -32,8 +56,8 @@ namespace Sound.Command
                 .WithTitle($"{video.Title}")
                 .AddField("Author", video.Info.Author, true)
                 .AddField("Duration", duration.ToString(@"m\:ss"), true)
-                .AddField("Requested by", ctx.Member.DisplayName, true)
-                .AddField("Status", "Downloading...")
+                .AddField("Requested by", ctx.Member.Mention, true)
+                .AddField("Status", "Downloading")
                 .AddField("Url", url));
 
             var mp3 = Path.GetTempFileName();
@@ -50,8 +74,8 @@ namespace Sound.Command
                 .WithTitle($"{video.Title}")
                 .AddField("Author", video.Info.Author, true)
                 .AddField("Duration", duration.ToString(@"m\:ss"), true)
-                .AddField("Requested by", ctx.Member.DisplayName, true)
-                .AddField("Status", "Extracting...")
+                .AddField("Requested by", ctx.Member.Mention, true)
+                .AddField("Status", "Extracting")
                 .AddField("Url", url).Build());
             
             var media = await FFmpeg.GetMediaInfo(mp4);
@@ -71,13 +95,24 @@ namespace Sound.Command
             File.Delete(mp4);
             File.Delete(mp3);
             
+            var position = manager.AddMusicToQueue(new Music
+            {
+                Message = message,
+                Voice = channel,
+                Audio = new MemoryStream(bytes),
+                Requester = ctx.Member,
+                Video = video,
+                Url = url
+            });
+            
             await message.ModifyAsync(new DiscordEmbedBuilder()
                 .WithColor(DiscordColor.Green)
                 .WithTitle($"{video.Title}")
                 .AddField("Author", video.Info.Author, true)
                 .AddField("Duration", duration.ToString(@"m\:ss"), true)
-                .AddField("Requested by", ctx.Member.DisplayName, true)
-                .AddField("Position", "Ready")
+                .AddField("Requested by", ctx.Member.Mention, true)
+                .AddField("Status", "Waiting", true)
+                .AddField("Position", $"{position}", true)
                 .AddField("Url", url).Build());
         }
     }
