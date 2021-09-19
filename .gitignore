@@ -16,7 +16,9 @@
 *.userprefs
 
 # Build results
-[Bb]uild/
+[Bb]uild/**
+![Bb]uild/**/.gitkeep
+
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/
