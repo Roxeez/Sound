@@ -17,10 +17,6 @@ namespace Sound
                 .ConfigureWebHostDefaults(x =>
                 {
                     x.UseStartup<Startup>();
-                    x.UseKestrel(s =>
-                    {
-                        s.ListenAnyIP(5000);
-                    });
                 })
                 .UseConsoleLifetime()
                 .Build();
